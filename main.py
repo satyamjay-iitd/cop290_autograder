@@ -63,8 +63,7 @@ def build_binary(submission_dir: Path, entry_nos: list[str]) -> Path:
         if not os.path.exists(binary_path):
             raise FileNotFoundError(f"Expected binary '{out_binary_name}' not found in {submission_dir}")
 
-        shutil.copyfile(binary_path, output_dir/out_binary_name)
-        print(f"Binary successfully moved to {output_dir}")
+        shutil.copy2(binary_path, output_dir/out_binary_name)
     except subprocess.CalledProcessError as e:
         print(f"Make failed: {e.stderr.decode()}")
     except FileNotFoundError as e:
