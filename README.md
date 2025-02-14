@@ -3,9 +3,9 @@
 ## Prerequisite
 1. Python3.12 (Might work on 3.10, 3.11 as well, haven't tested though)
 2. Project directory:-
-  a. Name should be of the form `lab2_entry1_entry2_entry3`
+  a. Name should be of the form `lab1_entry1_entry2_entry3`
   b. Should contain a Makefile
-  c. Makefile should build a binary named `spreadsheet` in `{project_dir}/target/release`
+  c. Running `make` inside the project directory should build a binary named `spreadsheet` in `{project_dir}/target/release`
 
 ## First time setup
 1. `git clone TODO`
@@ -22,7 +22,7 @@
 
 
 ## Notes on test cases
-1. Every test X has 2 components:- `x.cmds`, `x.exp`. `x.cmds` is the input to
+Every test X has 2 components:- `x.cmds` and `x.exp`. `x.cmds` is the input to
 your program. And `x.exp` is the expected output.
 
 ### .exp file format
@@ -58,8 +58,8 @@ ok 0
 - Here, `ok` signifies success, and `0` indicate that running this command should take 0 seconds.
 
 #### 2. Middle Section: Spreadsheet Data
-This section contains tabular data that appears similar to a spreadsheet.
-
+This section contains tabular data that appears similar to a spreadsheet. This section could also be empty
+if output has been disabled.
 ```
     ZZZ
 999 -5
@@ -75,3 +75,20 @@ The final line consists of a sequence of asterisks (`*`):
 ```
 - This serves as a **seperation marker** between outputs of diferent commands .
 
+
+## Adding test cases
+If you want to share your own interesting test cases with your classmates, feel free
+to add them in `students_tests` directory, and raise a PR. Please follow the format above. 
+
+
+## Bug in autograder
+If you find any bug in the autograder, you can either fix it and raise a PR, or
+create an issue on [github](https://github.com/satyamjay-iitd/cop290_autograder/issues), I
+will try to fix it ASAP.
+
+
+# Submission instructions
+1. Zip your project directoy
+`zip -r lab1_entry1_entry2.zip lab1_entry1_entry2 -x "lab1_entry1_entry2/target/*"`
+Note that this is the same directory that you passed to the test script.
+2. Submit on moodle.
