@@ -1,0 +1,4 @@
+disable_output
+A1=1
+B1=SLEEP(A1)
+C1=A1+B1

@@ -1,0 +1,6 @@
+disable_output
+scroll_to ZZZ999
+ZZZ999=MIN(B2:T20)
+B2=-1
+T20=B2*5
+enable_output
