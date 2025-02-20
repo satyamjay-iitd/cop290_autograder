@@ -94,10 +94,10 @@ Note that this is the same directory that you passed to the test script.
 2. Submit on moodle.
 
 
-TODOs:-
+TA TODOs:-
 Testcases:-
-  1. stddev
-  1. avg
+  1. ~~stddev~~
+  1. ~~avg~~
   2. div/0
   3. scroll
   4. cyclic dependency
