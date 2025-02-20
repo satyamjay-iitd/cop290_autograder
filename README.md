@@ -96,3 +96,14 @@ will try to fix it ASAP.
 `zip -r lab1_entry1_entry2.zip lab1_entry1_entry2 -x "lab1_entry1_entry2/target/*"`
 Note that this is the same directory that you passed to the test script.
 2. Submit on moodle.
+
+
+TA TODOs:-
+
+Testcases:-
+  1. ~~stddev~~
+  1. ~~avg~~
+  2. div/0
+  3. scroll
+  4. cyclic dependency
+  5. range

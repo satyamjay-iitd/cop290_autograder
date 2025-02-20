@@ -112,32 +112,35 @@ def get_rich_table(sheet: Table, highlight_cell: tuple[tuple[int, int], str]=((-
     return table
 
 """Shows diff in a rich console"""
-def print_diff(console: RConsole, diff: Diff, sheet1: Table|None, sheet2: Table|None):
+def print_diff(console: RConsole, diff: Diff, cmd: str, exp_sheet: Table|None, student_sheet: Table|None):
+    console.print(f"For command {cmd}:-", style="red")
     if diff.existence_diff is not None:
         if diff.existence_diff == (True, False):
             text = RText("Expected following table found None:-")
             console.print(text)
-            rich_table = get_rich_table(sheet1)
+            rich_table = get_rich_table(exp_sheet)
             console.print(rich_table)
         elif diff.existence_diff == (False, True):
             text = RText("Expected None found the following table:-")
-            rich_table = get_rich_table(sheet2)
+            rich_table = get_rich_table(student_sheet)
             console.print(text)
             console.print(rich_table)
     elif diff.header_diff is not None:
+        print(exp_sheet)
+        print(student_sheet)
         text = RText("Expected header != given header")
         table = RTable()
-        table.add_row("Expected", *sheet1.col_names)
-        table.add_row("Found", *sheet2.col_names)
+        table.add_row("Expected", *exp_sheet.col_names)
+        table.add_row("Found", *student_sheet.col_names)
         console.print(text)
         console.print(table)
     elif diff.num_row_diff is not None:
         text = RText()
         text.append("Number of ")
         text.append("expected", style="green")
-        text.append(f" rows {sheet1.num_rows()}, ")
+        text.append(f" rows {exp_sheet.num_rows()}, ")
         text.append("found", style="red")
-        text.append(f" num rows {sheet2.num_rows()}")
+        text.append(f" num rows {student_sheet.num_rows()}")
         console.print(text)
 
     elif diff.row_id_diff is not None:
@@ -148,7 +151,7 @@ def print_diff(console: RConsole, diff: Diff, sheet1: Table|None, sheet2: Table|
         text.append(f" found num rows {diff.row_id_diff[1]}", style="red")
 
     elif diff.cell_value_diff is not None:
-        table1, table2 = get_rich_table(sheet1, (diff.cell_value_diff[0], "green")), get_rich_table(sheet2, (diff.cell_value_diff[0], "red"))
+        table1, table2 = get_rich_table(exp_sheet, (diff.cell_value_diff[0], "green")), get_rich_table(student_sheet, (diff.cell_value_diff[0], "red"))
         panel = RPanel.fit(
             RColumns([table1, table2]),
             title="Table diff",
