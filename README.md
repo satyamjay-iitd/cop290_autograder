@@ -20,6 +20,10 @@
 ## Run single test
 1. `python main.py {path_to_proj_dir} {path_to_test_dir}/x.cmds`
 
+### Play demo
+1. Install [asciinema](https://docs.asciinema.org/getting-started/)
+2. Run `asciinema play demo.cast`
+
 
 ## Notes on test cases
 Every test X has 2 components:- `x.cmds` and `x.exp`. `x.cmds` is the input to
