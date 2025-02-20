@@ -103,7 +103,7 @@ TA TODOs:-
 Testcases:-
   1. ~~stddev~~
   1. ~~avg~~
-  2. div/0
+  2. ~~div/0~~
   3. scroll
   4. cyclic dependency
   5. range
