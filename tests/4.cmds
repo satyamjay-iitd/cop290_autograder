@@ -1,0 +1,9 @@
+disable_output
+scroll_to ZZZ999
+enable_output
+ZZZ999=STDEV(A1:E5)
+A1=1
+B1=2
+C1=3
+D1=4
+E1=5

@@ -10,6 +10,7 @@ from rich.table import Table as RTable
 
 
 from utils import diff_table, print_diff, parse_table, ExpectedOutput, Diff
+import time
 
 
 prompt_regex = r"\[.*] ?\(.*\) ?> ?"
@@ -61,7 +62,7 @@ def build_binary(submission_dir: Path, entry_nos: list[str]) -> Path:
         
         binary_path = submission_dir/"target"/"release"/"spreadsheet"
         if not os.path.exists(binary_path):
-            raise FileNotFoundError(f"Expected binary '{out_binary_name}' not found in {submission_dir}")
+            raise FileNotFoundError(f"Expected binary '{out_binary_name}' not found in {submission_dir}/target/release")
 
         shutil.copy2(binary_path, output_dir/out_binary_name)
     except subprocess.CalledProcessError as e:
@@ -78,7 +79,7 @@ before the prompt
 """
 def read_till_prompt(child, timeout) -> str:
     child.expect(prompt_regex, timeout=timeout)
-    return child.before.decode()
+    return child.before
 
 
 """
@@ -86,7 +87,10 @@ Runs the command given in the command file.
 """
 def run_test(bin_path: Path, cmd_file, exp_out_file):
     # Start the program
-    child = pexpect.spawn(str(bin_path), args=["999", "18278"])
+    log = open('/tmp/cop290_autograderlog.txt','w')
+
+    child = pexpect.spawn(str(bin_path), args=["999", "18278"], echo=False, encoding='utf-8')
+    child.logfile_read = log
     # Expect the spreadsheet that is printed at the start of the program
     read_till_prompt(child, 1)
     
@@ -100,21 +104,19 @@ def run_test(bin_path: Path, cmd_file, exp_out_file):
     for cmd, exp in zip(commands, exp_tables):
         # Feed command
         child.sendline(cmd)
+        time.sleep(0.1)
 
         # Wait for the prompt to appear and read all the output before it.
         try:
-            output = read_till_prompt(child, timeout=exp.time+0.1)
+            output = read_till_prompt(child, timeout=exp.time+0.2)
         except pexpect.exceptions.TIMEOUT:
             diff = Diff(time_diff=(cmd.strip(), exp.time))
             child.sendline("q")
-            print_diff(console, diff, exp.table, student_table)
+            print_diff(console, diff, cmd, exp.table, student_table)
             return False
 
         # Split the output by line.
         output_lines = output.split("\r\n")
-
-        # Remove first line, which is input itself
-        output_lines = output_lines[1:]
 
         # Remove empty lines
         output_lines: list[str] = list(filter(lambda x: x!="", output_lines))
@@ -125,7 +127,7 @@ def run_test(bin_path: Path, cmd_file, exp_out_file):
         diff = diff_table(exp.table, student_table)
         if diff is not None:
             child.sendline("q")
-            print_diff(console, diff, exp.table, student_table)
+            print_diff(console, diff, cmd, exp.table, student_table)
             return False
 
     # Quit the program
@@ -168,6 +170,7 @@ if __name__ == "__main__":
 
     verdict = []
     for (cmd, expected) in test_cases:
+        console.print(f"Running {cmd}")
         if not run_test(bin_path, cmd, expected):
             verdict.append((cmd,False))
         else:
