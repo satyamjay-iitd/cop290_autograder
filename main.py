@@ -1,3 +1,4 @@
+from datetime import datetime
 import subprocess
 import sys
 import shutil
@@ -100,7 +101,13 @@ def run_test(bin_path: Path, cmd_file, exp_out_file):
     assert len(commands) == len(exp_tables), f"Error in test case len(commands)={len(commands)}, len(exp_tables)={len(exp_tables)}"
 
     # Feed the commands one by one to the program
-    for cmd, exp in zip(commands, exp_tables):
+    start = datetime.now()
+    for i, (cmd, exp) in enumerate(zip(commands, exp_tables)):
+        if (i+1)%1000==0:
+            end = datetime.now()
+            print(f"Ran {i} commands in {(end-start).total_seconds()} secs")
+            start = datetime.now()
+
         # Feed command
         child.sendline(cmd)
         time.sleep(0.1)
@@ -132,6 +139,7 @@ def run_test(bin_path: Path, cmd_file, exp_out_file):
             child.sendline("q")
             print_diff(console, diff, cmd, exp.table, student_table)
             return False
+
 
     # Quit the program
     child.sendline("q")
