@@ -4,16 +4,15 @@ import shutil
 import os
 from pathlib import Path
 import pexpect
-from typing import Literal
 from rich.console import Console as RConsole
 from rich.table import Table as RTable
 
 
-from utils import diff_table, print_diff, parse_table, ExpectedOutput, Diff
+from utils import compute_diff, print_diff, parse_table, ExpectedOutput, Diff
 import time
 
 
-prompt_regex = r"\[.*] ?\(.*\) ?> ?"
+prompt_regex = r"\[.*] ?\(.*\) ?> ?$"
 
 console = RConsole()
 
@@ -77,9 +76,9 @@ def build_binary(submission_dir: Path, entry_nos: list[str]) -> Path:
 Waits for the prompt to appear, and return all the output
 before the prompt
 """
-def read_till_prompt(child, timeout) -> str:
+def read_till_prompt(child, timeout) -> tuple[str, str]:
     child.expect(prompt_regex, timeout=timeout)
-    return child.before
+    return child.before, child.after
 
 
 """
@@ -108,7 +107,11 @@ def run_test(bin_path: Path, cmd_file, exp_out_file):
 
         # Wait for the prompt to appear and read all the output before it.
         try:
-            output = read_till_prompt(child, timeout=exp.time+0.2)
+            output, status_line = read_till_prompt(child, timeout=exp.time+0.2)
+            # Status line is in the following format:-
+            # [0.00] (ok) > [0.00] (ok) > 
+            status_line = status_line.lower()
+            status_is_ok = "ok" in status_line
         except pexpect.exceptions.TIMEOUT:
             diff = Diff(time_diff=(cmd.strip(), exp.time))
             child.sendline("q")
@@ -124,7 +127,7 @@ def run_test(bin_path: Path, cmd_file, exp_out_file):
         # parse into Table
         student_table = parse_table(output_lines)
         # diff with expected table
-        diff = diff_table(exp.table, student_table)
+        diff = compute_diff(exp, student_table, status_is_ok)
         if diff is not None:
             child.sendline("q")
             print_diff(console, diff, cmd, exp.table, student_table)

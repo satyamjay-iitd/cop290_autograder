@@ -14,8 +14,10 @@ type RowIdx = int
 type Err = Literal["Err"]
 type Rows = list[tuple[RowIdx, list[int | Err]]]
 
+
 @dataclasses.dataclass
 class Diff:
+    status_diff: tuple[bool, bool] | None = None
     existence_diff: tuple[bool, bool] | None = None
     header_diff: tuple[ColNames, ColNames] | None = None
     num_row_diff: tuple[int, int] | None = None
@@ -32,6 +34,7 @@ class Table:
     rows: Rows
 
     """Returns whether the table is valid, if it is invalid, return reason."""
+
     def validate(self) -> tuple[bool, str]:
         if len(self.col_names) > 10:
             return False, "Num columns > 10"
@@ -46,14 +49,16 @@ class Table:
             if row[0] > 999:
                 return False, f"Only 999 rows are allowed found {row[0]}"
             if len(row[1]) != self.num_cols():
-                return False, f"All rows must have {self.num_cols()} number of cells found {len(row[1])}"
+                return (
+                    False,
+                    f"All rows must have {self.num_cols()} number of cells found {len(row[1])}",
+                )
 
         return True, ""
-            
 
     def num_cols(self) -> int:
         return len(self.col_names)
-        
+
     def num_rows(self) -> int:
         return len(self.rows)
 
@@ -66,32 +71,40 @@ class ExpectedOutput:
 
 
 """Calculates diff with the other tables"""
-def diff_table(exp: Table|None, other: Table|None) -> Diff | None:
-    if other is None and exp is None:
+def compute_diff(exp: ExpectedOutput, student_table: Table | None, student_status: bool) -> Diff | None:
+    if student_status != exp.status_is_ok:
+        return Diff(status_diff=(exp.status_is_ok, student_status))
+
+    if student_table is None and exp.table is None:
         return None
-    if exp is None and other is not None:
+    if exp.table is None and student_table is not None:
         return Diff(existence_diff=(False, True))
-    if other is None and exp is not None:
+    if student_table is None and exp.table is not None:
         return Diff(existence_diff=(True, False))
 
-    assert(exp is not None)
-    assert(other is not None)
 
-    if exp.col_names != other.col_names:
-        return Diff(header_diff=(exp.col_names, other.col_names))
-    if exp.num_rows() != other.num_rows():
-        return Diff(num_row_diff=(exp.num_rows(), other.num_rows()))
+    exp_table = exp.table
+    assert exp_table is not None
+    assert student_table is not None
 
-    for (row_idx, (my_row, other_row)) in enumerate(zip(exp.rows, other.rows)):
+    if exp_table.col_names != student_table.col_names:
+        return Diff(header_diff=(exp_table.col_names, student_table.col_names))
+    if exp_table.num_rows() != student_table.num_rows():
+        return Diff(num_row_diff=(exp_table.num_rows(), student_table.num_rows()))
+
+    for row_idx, (my_row, other_row) in enumerate(zip(exp_table.rows, student_table.rows)):
         if my_row[0] != other_row[0]:
             return Diff(row_id_diff=(row_idx, my_row[0], other_row[0]))
-        for (cell_idx, (my_cell, other_cell)) in enumerate(zip(my_row[1], other_row[1])):
+        for cell_idx, (my_cell, other_cell) in enumerate(zip(my_row[1], other_row[1])):
             if my_cell != other_cell:
                 return Diff(cell_value_diff=((row_idx, cell_idx), my_cell, other_cell))
 
     return None
 
-def get_rich_table(sheet: Table, highlight_cell: tuple[tuple[int, int], str]=((-1, -1), "")) -> RTable:
+
+def get_rich_table(
+    sheet: Table, highlight_cell: tuple[tuple[int, int], str] = ((-1, -1), "")
+) -> RTable:
     table = RTable()
 
     table.add_column("row_id", justify="right", style="cyan", no_wrap=True)
@@ -111,9 +124,26 @@ def get_rich_table(sheet: Table, highlight_cell: tuple[tuple[int, int], str]=((-
 
     return table
 
+
 """Shows diff in a rich console"""
-def print_diff(console: RConsole, diff: Diff, cmd: str, exp_sheet: Table|None, student_sheet: Table|None):
+
+
+def print_diff(
+    console: RConsole,
+    diff: Diff,
+    cmd: str,
+    exp_sheet: Table | None,
+    student_sheet: Table | None,
+):
     console.print(f"For command {cmd}:-", style="red")
+
+    if diff.status_diff is not None:
+        if diff.status_diff == (True, False):
+            console.print("Expected status 'ok' found 'err'")
+        elif diff.status_diff == (False, True):
+            console.print("Expected status 'err' found 'ok'")
+        return
+
     if diff.existence_diff is not None:
         if diff.existence_diff == (True, False):
             text = RText("Expected following table found None:-")
@@ -151,7 +181,9 @@ def print_diff(console: RConsole, diff: Diff, cmd: str, exp_sheet: Table|None, s
         text.append(f" found num rows {diff.row_id_diff[1]}", style="red")
 
     elif diff.cell_value_diff is not None:
-        table1, table2 = get_rich_table(exp_sheet, (diff.cell_value_diff[0], "green")), get_rich_table(student_sheet, (diff.cell_value_diff[0], "red"))
+        table1, table2 = get_rich_table(
+            exp_sheet, (diff.cell_value_diff[0], "green")
+        ), get_rich_table(student_sheet, (diff.cell_value_diff[0], "red"))
         panel = RPanel.fit(
             RColumns([table1, table2]),
             title="Table diff",
@@ -168,11 +200,13 @@ def print_diff(console: RConsole, diff: Diff, cmd: str, exp_sheet: Table|None, s
         text.append(str(diff.time_diff[1]), style="green")
         text.append("secs.")
         console.print(text)
-        
+
 
 """
 Parses list of string to Table.
 """
+
+
 def parse_table(lines: list[str]) -> Table | None:
     if len(lines) == 0:
         return None
@@ -191,7 +225,7 @@ def parse_table(lines: list[str]) -> Table | None:
         row_num = int(cells[0])
 
         # Parse cell to integer or Err
-        parsed_cells: list[int|Literal["Err"]] = []
+        parsed_cells: list[int | Literal["Err"]] = []
         for cell in cells[1:]:
             cell = cell.strip()
             try:
@@ -201,5 +235,3 @@ def parse_table(lines: list[str]) -> Table | None:
         rows.append((row_num, parsed_cells))
 
     return Table(header_line, rows)
-
-
