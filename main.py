@@ -7,6 +7,7 @@ from pathlib import Path
 import pexpect
 from rich.console import Console as RConsole
 from rich.table import Table as RTable
+import re
 
 
 from utils import compute_diff, print_diff, parse_table, ExpectedOutput, Diff
@@ -14,6 +15,16 @@ import time
 
 
 prompt_regex = r"\[.*] ?\(.*\) ?> ?$"
+
+# [0.00] (actual_status) > [0.00] (ok) > 
+status_line_regex = r"\(([^)]+)\)"
+
+def get_status(status_line: str) -> bool:
+    match = re.search(r"\(([^)]+)\)", status_line)
+    if match:
+        return "ok" in match.group(1)
+    else:
+        raise Exception("Unexpected status line")
 
 console = RConsole()
 
@@ -118,7 +129,7 @@ def run_test(bin_path: Path, cmd_file, exp_out_file):
             # Status line is in the following format:-
             # [0.00] (ok) > [0.00] (ok) > 
             status_line = status_line.lower()
-            status_is_ok = "ok" in status_line
+            status_is_ok = get_status(status_line)
         except pexpect.exceptions.TIMEOUT:
             diff = Diff(time_diff=(cmd.strip(), exp.time))
             child.sendline("q")
