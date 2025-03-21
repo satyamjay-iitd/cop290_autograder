@@ -1,12 +1,33 @@
+"""
+This utilities are used for running the submission.
+"""
+
 import dataclasses
 from typing import Literal
 import re
+import subprocess
 from rich.console import Console as RConsole
 from rich.text import Text as RText
 from rich.table import Table as RTable
 from rich.panel import Panel as RPanel
 from rich.style import Style as RStyle
 from rich.columns import Columns as RColumns
+from pathlib import Path
+import shutil
+import pandas as pd
+from dataclasses import dataclass
+from typing import Callable
+import zipfile
+from compile_utils import (
+    find_makefile,
+    extract_entry_no,
+    build_binary,
+    get_test_case_pairs,
+)
+
+console = RConsole()
+# import pdb
+# pdb.set_trace()
 
 
 type ColNames = list[str]
@@ -71,7 +92,11 @@ class ExpectedOutput:
 
 
 """Calculates diff with the other tables"""
-def compute_diff(exp: ExpectedOutput, student_table: Table | None, student_status: bool) -> Diff | None:
+
+
+def compute_diff(
+    exp: ExpectedOutput, student_table: Table | None, student_status: bool
+) -> Diff | None:
     if student_status != exp.status_is_ok:
         return Diff(status_diff=(exp.status_is_ok, student_status))
 
@@ -82,7 +107,6 @@ def compute_diff(exp: ExpectedOutput, student_table: Table | None, student_statu
     if student_table is None and exp.table is not None:
         return Diff(existence_diff=(True, False))
 
-
     exp_table = exp.table
     assert exp_table is not None
     assert student_table is not None
@@ -92,7 +116,9 @@ def compute_diff(exp: ExpectedOutput, student_table: Table | None, student_statu
     if exp_table.num_rows() != student_table.num_rows():
         return Diff(num_row_diff=(exp_table.num_rows(), student_table.num_rows()))
 
-    for row_idx, (my_row, other_row) in enumerate(zip(exp_table.rows, student_table.rows)):
+    for row_idx, (my_row, other_row) in enumerate(
+        zip(exp_table.rows, student_table.rows)
+    ):
         if my_row[0] != other_row[0]:
             return Diff(row_id_diff=(row_idx, my_row[0], other_row[0]))
         for cell_idx, (my_cell, other_cell) in enumerate(zip(my_row[1], other_row[1])):
@@ -136,7 +162,6 @@ def print_diff(
     student_sheet: Table | None,
 ):
     console.print(f"For command {cmd}:-", style="red")
-
     if diff.status_diff is not None:
         if diff.status_diff == (True, False):
             console.print("Expected status 'ok' found 'err'")
@@ -176,14 +201,16 @@ def print_diff(
     elif diff.row_id_diff is not None:
         text = RText()
         text.append("Id of ")
-        text.append("{}th row", style="cyan")
-        text.append(f" is supposed to be {diff.row_id_diff[0]},", style="green")
-        text.append(f" found num rows {diff.row_id_diff[1]}", style="red")
+        text.append(f"{diff.row_id_diff[0]}th row", style="cyan")
+        text.append(f" is supposed to be {diff.row_id_diff[1]},", style="green")
+        text.append(f" found num rows {diff.row_id_diff[2]}", style="red")
+        console.print(text)
 
     elif diff.cell_value_diff is not None:
-        table1, table2 = get_rich_table(
-            exp_sheet, (diff.cell_value_diff[0], "green")
-        ), get_rich_table(student_sheet, (diff.cell_value_diff[0], "red"))
+        table1, table2 = (
+            get_rich_table(exp_sheet, (diff.cell_value_diff[0], "green")),
+            get_rich_table(student_sheet, (diff.cell_value_diff[0], "red")),
+        )
         panel = RPanel.fit(
             RColumns([table1, table2]),
             title="Table diff",
@@ -221,7 +248,7 @@ def parse_table(lines: list[str]) -> Table | None:
         row = row.strip()
         cells = row.split()
         # First cell is row number
-        assert cells[0].isnumeric(), "Row index must be integer"
+        assert cells[0].isnumeric(), f"Row index must be integer  {lines}"
         row_num = int(cells[0])
 
         # Parse cell to integer or Err
@@ -235,3 +262,172 @@ def parse_table(lines: list[str]) -> Table | None:
         rows.append((row_num, parsed_cells))
 
     return Table(header_line, rows)
+
+
+def extract_zip(file: Path) -> tuple[Path, str] | None:
+    if file.suffix != ".zip":
+        return None
+    extract_to = Path("/tmp/cop290_lab1/")
+    # Remove the extract_to directory if it exists
+    if extract_to.exists():
+        shutil.rmtree(extract_to)
+
+    # Create a fresh extract_to directory
+    extract_to.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(file, "r") as zip_ref:
+        zip_ref.extractall(extract_to)
+        print(f"Extracted {file} to {extract_to}")
+
+    return extract_to
+
+
+@dataclass
+class TestResult:
+    is_pass: bool
+    time_taken_s: int = -1
+    max_mem_gb: int = -1
+    reason: str = ""
+
+
+def eval_single(
+    test_lambda: Callable[[Path, Path, Path], TestResult],
+    submission_zip: Path,
+    test_dir: Path,
+    entry_nos: list[str],
+    marks_mapping: dict[str, int],
+    add_mem_info: bool = False,
+):
+    extraction = extract_zip(submission_zip)
+    if extraction is None:
+        return "Couldn't extract zip file"
+    else:
+        extracted_dir = extraction
+
+    make_file_dir = find_makefile(extracted_dir)
+    if make_file_dir is None:
+        return "Makefile not found"
+    try:
+        bin_path = build_binary(make_file_dir, entry_nos)
+    except FileNotFoundError:
+        return "Couldn't compile binary"
+
+    test_cases = get_test_case_pairs(test_dir)
+
+    verdict = []
+    marks = {}
+    for cmd, expected in test_cases:
+        console.print(f"Running {cmd}")
+        result = test_lambda(bin_path, cmd, expected)
+        # Kill spreadsheet process for sanity
+        subprocess.run(["pkill", "-f", "spreadsheet"])
+
+        verdict.append((cmd, result.is_pass, result.reason, result.max_mem_gb, result.time_taken_s))
+        if not result.is_pass:
+            marks[str(cmd)] = result.reason
+        else:
+            marks[str(cmd)] = marks_mapping[str(cmd)]
+            if add_mem_info and result.max_mem_gb != -1:
+                marks[f"{str(cmd)}_mem"] = result.max_mem_gb
+                marks[f"{str(cmd)}_time"] = result.time_taken_s
+
+    table = RTable()
+
+    table.add_column("Test Case", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Verdict", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Memory(GB)", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Time(Sec)", justify="right", style="cyan", no_wrap=True)
+    for test, is_pass, reason, mem, time in verdict:
+        if is_pass:
+            table.add_row(str(test), "PASS", str(mem), str(time), style="green")
+        else:
+            table.add_row(str(test), f"FAIL: {reason}", str(mem), str(time), style="red")
+    console.print(table)
+    return marks
+
+
+def eval_batch(
+    test_lambda: Callable[[Path, Path, Path], TestResult],
+    submission_dir: Path,
+    test_dir: Path,
+    marks_mapping: dict[str, int],
+    marks_csv: Path,
+    add_mem_info: bool = False,
+):
+    def is_number(s: str) -> bool:
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
+    total_data = []
+    # Add the failed submissions to this directory for manual inspection
+    failed_dir = Path("/tmp/cop290_lab1_failed/")
+
+    if failed_dir.exists():
+        shutil.rmtree(failed_dir)
+        failed_dir.mkdir(parents=True, exist_ok=True)
+
+    i = 0
+    for submission_zip in submission_dir.iterdir():
+        i += 1
+        # if i == 10:
+        #     break
+
+        print(f"Evaluating: {submission_zip}")
+        try:
+            entry_nos = extract_entry_no(submission_zip)
+            if not entry_nos:
+                data = {}
+                data["group_idx"] = submission_zip.stem
+                data["entry_no"] = None
+                data["error"] = f"Couldn't extract entry numbers from {submission_zip}"
+                data["total"] = 0
+                failed_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(submission_zip, failed_dir / submission_zip.name)
+                continue
+
+            group_idx = "_".join(entry_nos)
+            result = eval_single(
+                test_lambda,
+                submission_zip,
+                test_dir,
+                entry_nos,
+                marks_mapping,
+                add_mem_info,
+            )
+            if isinstance(result, str):
+                data = {}
+                data["group_idx"] = submission_zip.stem
+                for e in entry_nos:
+                    data = {}
+                    data["group_idx"] = group_idx
+                    data["entry_no"] = e
+                    data["error"] = result
+                    data["total"] = 0
+                    total_data.append(data)
+                failed_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(submission_zip, failed_dir / submission_zip.name)
+            else:
+                for e in entry_nos:
+                    data = {}
+                    data["group_idx"] = group_idx
+                    data["entry_no"] = e
+                    data["error"] = None
+                    data |= result
+                    data["total"] = sum(filter(lambda x: is_number(x), result.values()))
+                    total_data.append(data)
+
+        except Exception as e:
+            for en in entry_nos:
+                data = {}
+                data["group_idx"] = group_idx
+                data["entry_no"] = en
+                data["error"] = str(e)
+                data["total"] = 0
+                failed_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(submission_zip, failed_dir / submission_zip.name)
+                total_data.append(data)
+
+    df = pd.DataFrame(total_data)
+    df.to_csv(str(marks_csv), index=False)

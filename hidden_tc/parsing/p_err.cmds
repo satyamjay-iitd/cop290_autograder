@@ -1,0 +1,6 @@
+disable_output
+A1=ABC
+A1=B1@C1
+A1=AVG(D1:C1)
+A1=ABC(B1:B10)
+A1=SLEEP(B1:C1)

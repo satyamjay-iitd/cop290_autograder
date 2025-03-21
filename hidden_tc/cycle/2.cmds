@@ -1,0 +1,4 @@
+disable_output
+A1=MIN(A1:A10)
+A1=B1
+B1=MIN(A1:B10)
