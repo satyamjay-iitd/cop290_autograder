@@ -1,5 +1,9 @@
 # COP290 Lab1 Autograder
 
+## Play demo
+1. Install [asciinema](https://docs.asciinema.org/getting-started/)
+2. Run `asciinema play autograder.cast`
+
 ## Prerequisite
 1. Ubuntu
 2. Python3.12 (Might work on 3.10, 3.11 as well, haven't tested though)
@@ -38,8 +42,5 @@ Test cases tested using this tester is located here:- `hidden_tc2/`
 `python main2.py single {path_to_zip_file} hidden_tc2/*/*.cmds marks_mapping.csv`
 
 
-### Play demo
-1. Install [asciinema](https://docs.asciinema.org/getting-started/)
-2. Run `asciinema play autograder.cast`
 
 
