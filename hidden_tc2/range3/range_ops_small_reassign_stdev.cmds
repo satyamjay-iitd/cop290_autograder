@@ -1001,3 +1001,4 @@ B999=8
 A1=STDEV(B1:B999)
 B1=-1
 enable_output
+q

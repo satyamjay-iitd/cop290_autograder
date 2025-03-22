@@ -18324,3 +18324,4 @@ AR2=MAX(A1:AR1)
 A1=1000000
 scroll_to AR2
 enable_output
+q
