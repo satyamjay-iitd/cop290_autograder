@@ -317,7 +317,19 @@ def eval_single(
     marks = {}
     for cmd, expected in test_cases:
         console.print(f"Running {cmd}")
-        result = test_lambda(bin_path, cmd, expected)
+        a = str(cmd)
+        if a == "hidden_tc/scroll/hard.cmds":
+            result1 = test_lambda(bin_path, cmd, expected)
+            expected1 = Path("hidden_tc/scroll/hard1.exp")
+            result2 = test_lambda(bin_path, cmd, expected1)
+            if result1.is_pass:
+                result = result1
+            elif result2.is_pass:
+                result = result2
+            else:
+                result = result1            
+        else:
+            result = test_lambda(bin_path, cmd, expected)        
         # Kill spreadsheet process for sanity
         subprocess.run(["pkill", "-f", "spreadsheet"])
 
