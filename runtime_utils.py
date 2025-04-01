@@ -3,7 +3,8 @@ This utilities are used for running the submission.
 """
 
 import dataclasses
-from typing import Literal
+import os
+from typing import Literal, Optional
 import re
 import subprocess
 from rich.console import Console as RConsole
@@ -34,6 +35,8 @@ type ColNames = list[str]
 type RowIdx = int
 type Err = Literal["Err"]
 type Rows = list[tuple[RowIdx, list[int | Err]]]
+
+PATCH_DIR = "/home/baadalvm/lab1_patches"
 
 
 @dataclasses.dataclass
@@ -232,8 +235,6 @@ def print_diff(
 """
 Parses list of string to Table.
 """
-
-
 def parse_table(lines: list[str]) -> Table | None:
     if len(lines) == 0:
         return None
@@ -280,10 +281,20 @@ def extract_zip(file: Path) -> tuple[Path, str] | None:
 
     return extract_to
 
+def extract_patch_file_path(entry_num: str) -> Optional[Path]:
+    try:
+        for filename in os.listdir(PATCH_DIR):
+            if entry_num.lower() in filename.lower():
+                return Path(PATCH_DIR) / filename
+        return None
+    except FileNotFoundError:
+        return None
+
 
 @dataclass
 class TestResult:
     is_pass: bool
+    marks: float
     time_taken_s: int = -1
     max_mem_gb: int = -1
     reason: str = ""
@@ -295,6 +306,7 @@ def eval_single(
     test_dir: Path,
     entry_nos: list[str],
     marks_mapping: dict[str, int],
+    patch: bool = False,
     add_mem_info: bool = False,
 ):
     extraction = extract_zip(submission_zip)
@@ -306,6 +318,22 @@ def eval_single(
     make_file_dir = find_makefile(extracted_dir)
     if make_file_dir is None:
         return "Makefile not found"
+
+    if patch:
+        # find the patch file
+        patch_path = None
+        for entry_no in entry_nos:
+            patch_file = extract_patch_file_path(entry_no) 
+            if patch_file:
+                if patch_path:
+                    assert patch_file == patch_file, f"Two different patch file found {patch_file} {patch_path}"
+                else:
+                    patch_path = patch_file
+        if patch_path:
+            print(patch_path)
+            print("Applying patch")
+            subprocess.run(["git", "apply", str(patch_path)], cwd=str(make_file_dir))
+
     try:
         bin_path = build_binary(make_file_dir, entry_nos)
     except FileNotFoundError:
@@ -317,31 +345,33 @@ def eval_single(
     marks = {}
     for cmd, expected in test_cases:
         console.print(f"Running {cmd}")
-        result = test_lambda(bin_path, cmd, expected)
+        result = test_lambda(bin_path, cmd, expected, marks_mapping)
         # Kill spreadsheet process for sanity
         subprocess.run(["pkill", "-f", "spreadsheet"])
 
-        verdict.append((cmd, result.is_pass, result.reason, result.max_mem_gb, result.time_taken_s))
+        verdict.append((cmd, result.is_pass, result.reason, result.marks, result.max_mem_gb, result.time_taken_s))
         if not result.is_pass:
             marks[str(cmd)] = result.reason
         else:
-            marks[str(cmd)] = marks_mapping[str(cmd)]
-            if add_mem_info and result.max_mem_gb != -1:
-                marks[f"{str(cmd)}_mem"] = result.max_mem_gb
-                marks[f"{str(cmd)}_time"] = result.time_taken_s
+            marks[str(cmd)] = result.marks
+        if add_mem_info and result.max_mem_gb != -1:
+            marks[f"{str(cmd)}_mem"] = result.max_mem_gb
+            marks[f"{str(cmd)}_time"] = result.time_taken_s
 
     table = RTable()
 
     table.add_column("Test Case", justify="right", style="cyan", no_wrap=True)
     table.add_column("Verdict", justify="right", style="cyan", no_wrap=True)
-    table.add_column("Memory(GB)", justify="right", style="cyan", no_wrap=True)
-    table.add_column("Time(Sec)", justify="right", style="cyan", no_wrap=True)
-    for test, is_pass, reason, mem, time in verdict:
+    table.add_column("Marks", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Memory(MB)", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Time(ms)", justify="right", style="cyan", no_wrap=True)
+    for test, is_pass, reason, mark, mem, time in verdict:
         if is_pass:
-            table.add_row(str(test), "PASS", str(mem), str(time), style="green")
+            table.add_row(str(test), "PASS", str(mark), str(mem), str(time), style="green")
         else:
-            table.add_row(str(test), f"FAIL: {reason}", str(mem), str(time), style="red")
+            table.add_row(str(test), f"FAIL: {reason}", str(mark), str(mem), str(time), style="red")
     console.print(table)
+    print(marks)
     return marks
 
 
@@ -352,6 +382,7 @@ def eval_batch(
     marks_mapping: dict[str, int],
     marks_csv: Path,
     add_mem_info: bool = False,
+    patch: bool = False
 ):
     def is_number(s: str) -> bool:
         try:
@@ -371,8 +402,8 @@ def eval_batch(
     i = 0
     for submission_zip in submission_dir.iterdir():
         i += 1
-        # if i == 10:
-        #     break
+        # if i > 10:
+        #     continue
 
         print(f"Evaluating: {submission_zip}")
         try:
@@ -394,6 +425,7 @@ def eval_batch(
                 test_dir,
                 entry_nos,
                 marks_mapping,
+                patch,
                 add_mem_info,
             )
             if isinstance(result, str):
@@ -415,7 +447,11 @@ def eval_batch(
                     data["entry_no"] = e
                     data["error"] = None
                     data |= result
-                    data["total"] = sum(filter(lambda x: is_number(x), result.values()))
+                    total = 0
+                    for k, v in result.items():
+                        if k.endswith(".cmds") and is_number(v):
+                            total += v
+                    data["total"] = total
                     total_data.append(data)
 
         except Exception as e:

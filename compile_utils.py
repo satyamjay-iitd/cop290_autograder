@@ -9,7 +9,7 @@ import pandas as pd
 import re
 
 
-def extract_entry_no(zip_file: Path):
+def extract_entry_no(zip_file: Path) -> list[str]:
     name = zip_file.stem
     entry_no_regex = r"20\d{2}\w{2,3}\d{4,5}"
     entry_nos = name.split("_")
@@ -22,13 +22,15 @@ def find_makefile(base_dir: Path) -> Path | None:
         return makefile.parent
     for makefile in base_dir.rglob('makefile'):
         return makefile.parent
+    for makefile in base_dir.rglob('Makefile.txt'):
+        return makefile.parent
     return None
 
 
 def parse_marks_mapping(file: Path):
-    df = pd.read_csv(file, header=None, names=['tc_name', 'marks'])
+    df = pd.read_csv(file, header=None, names=['tc_name', 'marks', 'good_time', 'max_mem'])
 
-    marks_mapping = df.set_index('tc_name')['marks'].to_dict()
+    marks_mapping = df.set_index('tc_name').to_dict()
     return marks_mapping
 
 

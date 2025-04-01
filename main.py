@@ -70,27 +70,30 @@ def read_till_prompt(child, timeout) -> tuple[str, str]:
 """
 Runs the commands given in the command file.
 """
-def run_test(bin_path: Path, cmd_file, exp_out_file):
+def run_test(bin_path: Path, cmd_file, exp_out_file, marks_mapping):
     # Start the program
     log = open("/tmp/cop290_autograderlog.txt", "w")
 
+    f = open(cmd_file, "r")
+    lines = f.readlines()
+    num_rows, num_cols = list(map(lambda x: int(x), lines[0].split()))
+    commands = lines[1:]
+
     try:
         child = pexpect.spawn(
-            str(bin_path), args=["999", "18278"], echo=False, encoding="utf-8"
+            str(bin_path), args=[str(num_rows), str(num_cols)], echo=False, encoding="utf-8"
         )
-    except:
-        return TestResult(is_pass=False, reason="Couldn't spawn the program")
+    except Exception as e:
+        return TestResult(is_pass=False, reason=f"Couldn't spawn the program {e}")
     child.logfile_read = log
 
     # Expect the spreadsheet that is printed at the start of the program
     try:
-        read_till_prompt(child, 2)
+        read_till_prompt(child, 10)
     except:
         return TestResult(is_pass=False, reason="Couldn't read the initial prompt")
 
     # Read the command file
-    f = open(cmd_file, "r")
-    commands = f.readlines()
     exp_tables = parse_expected_file(exp_out_file)
     assert len(commands) == len(
         exp_tables
@@ -105,7 +108,8 @@ def run_test(bin_path: Path, cmd_file, exp_out_file):
             start = datetime.now()
 
         # Feed command
-        child.sendline(cmd)
+        # child.sendline(cmd)
+        child.sendline(cmd.strip("\n"))
         time.sleep(0.1)
 
         # Wait for the prompt to appear and read all the output before it.
@@ -119,9 +123,9 @@ def run_test(bin_path: Path, cmd_file, exp_out_file):
             diff = Diff(time_diff=(cmd.strip(), exp.time))
             child.sendline("q")
             print_diff(console, diff, cmd, exp.table, None)
-            return TestResult(is_pass=False, reason="Time limit exceeded")
+            return TestResult(is_pass=False, reason="Time limit exceeded", marks=0)
         except Exception as e:
-            return TestResult(is_pass=False, reason=f"Couldn't send command {cmd.strip()} to the program")
+            return TestResult(is_pass=False, reason=f"Couldn't send command {cmd.strip()} to the program", marks=0)
 
         # Split the output by line.
         output_lines = output.split("\r\n")
@@ -136,11 +140,12 @@ def run_test(bin_path: Path, cmd_file, exp_out_file):
         if diff is not None:
             child.sendline("q")
             print_diff(console, diff, cmd, exp.table, student_table)
-            return TestResult(is_pass=False, reason="Output Incorrect")
+            return TestResult(is_pass=False, reason="Output Incorrect", marks=0)
 
     # Quit the program
     child.sendline("q")
-    return TestResult(is_pass=True, reason="")
+    marks = marks_mapping['marks'][str(cmd_file)]
+    return TestResult(is_pass=True, reason="", marks=marks)
 
 
 
@@ -151,7 +156,11 @@ if __name__ == "__main__":
         submission = Path(sys.argv[2])
         test_dir = Path(sys.argv[3])
         marks_mapping = Path(sys.argv[4])
-    except:
+        try:
+            patch_path = Path(sys.argv[5])
+        except:
+            patch_path = None
+    except Exception as e:
         print("Usage: python main.py [mode] [submission_dir] [test_dir] [marks_mapping]")
         exit(1)
 
@@ -167,7 +176,9 @@ if __name__ == "__main__":
     # tc_name -> marks
     marks_mapping = parse_marks_mapping(marks_mapping)
     if mode == "batch":
-        eval_batch(run_test, submission, test_dir, marks_mapping, "~/lab1_marks.csv")
+        eval_batch(run_test, submission, test_dir, marks_mapping, "~/lab1_marks.csv", patch=patch_path)
     elif mode == "single":
         entry_nos = submission.name.split("_")[1:]
-        eval_single(run_test, submission, test_dir, entry_nos, marks_mapping)
+        # entry_nos[-1] = entry_nos[-1][:-4]
+        # print(entry_nos)
+        eval_single(run_test, submission, test_dir, entry_nos, marks_mapping, patch=patch_path)

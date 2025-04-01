@@ -1,28 +1,45 @@
-hidden_tc/arith/consts.cmds, 0.25
-hidden_tc/arith/dep.cmds, 0.25
-hidden_tc/arith/div0.cmds, 0.25
-hidden_tc/arith/update.cmds, 0.50
-hidden_tc/cycle/1.cmds, 0.5
-hidden_tc/cycle/2.cmds, 0.5
-hidden_tc/no_recal/1.cmds, 0.5
-hidden_tc/no_recal/2.cmds, 0.5
-hidden_tc/parsing/p_err.cmds, 0.25
-hidden_tc/parsing/p_ok.cmds, 0.25
-hidden_tc/scroll/easy.cmds, 0.25
-hidden_tc/scroll/hard.cmds, 0.25
-hidden_tc2/chain/large_dep_chain.cmds, 0.625
-hidden_tc2/chain/small_dep_chain.cmds, 0.625
-hidden_tc2/dense_dag/large.cmds, 1.0
-hidden_tc2/dense_dag/small.cmds, 1.0
-hidden_tc2/range1/range_ops_small_avg.cmds, 0.05
-hidden_tc2/range1/range_ops_small_min.cmds, 0.05
-hidden_tc2/range1/range_ops_small_max.cmds, 0.05
-hidden_tc2/range1/range_ops_small_stdev.cmds, 0.05
-hidden_tc2/range1/range_ops_small_sum.cmds, 0.05
-hidden_tc2/range2/range_ops_large_avg.cmds, 0.25
-hidden_tc2/range3/range_ops_small_reassign_avg.cmds, 0.05
-hidden_tc2/range3/range_ops_small_reassign_min.cmds, 0.05
-hidden_tc2/range3/range_ops_small_reassign_max.cmds, 0.05
-hidden_tc2/range3/range_ops_small_reassign_stdev.cmds, 0.05
-hidden_tc2/range3/range_ops_small_reassign_sum.cmds, 0.05
-hidden_tc2/range4/range_ops_large_reassign_avg.cmds, 0.75
+hidden_tc/arith/consts.cmds, 0.25,,
+hidden_tc/arith/dep.cmds, 0.25,,
+hidden_tc/arith/div0.cmds, 0.25,,
+hidden_tc/arith/update.cmds, 0.50,,
+hidden_tc/cycle/1.cmds, 0.5,,
+hidden_tc/cycle/2.cmds, 0.5,,
+hidden_tc/no_recal/1.cmds, 0.5,,
+hidden_tc/no_recal/2.cmds, 0.5,,
+hidden_tc/parsing/p_err.cmds, 0.25,,
+hidden_tc/parsing/p_ok.cmds, 0.25,,
+hidden_tc/scroll/easy.cmds, 0.25,,
+hidden_tc/scroll/hard.cmds, 0.25,,
+hidden_tc/scroll/hard2.cmds, 0.25,,
+hidden_tc2/chain/large_dep_chain.cmds, 0.625, 15,
+hidden_tc2/chain/small_dep_chain.cmds, 0.625, 3,
+hidden_tc2/dense_dag/large.cmds, 1.0, 15,
+hidden_tc2/dense_dag/small.cmds, 1.0, 5,
+hidden_tc2/range1/range_ops_small_avg.cmds, 0.05, 2,
+hidden_tc2/range1/range_ops_small_min.cmds, 0.05, 2,
+hidden_tc2/range1/range_ops_small_max.cmds, 0.05, 2,
+hidden_tc2/range1/range_ops_small_stdev.cmds, 0.05, 2,
+hidden_tc2/range1/range_ops_small_sum.cmds, 0.05, 2,
+hidden_tc2/range2/range_ops_large_avg.cmds, 0.25, 2,
+hidden_tc2/range3/range_ops_small_reassign_avg.cmds, 0.05, 3,
+hidden_tc2/range3/range_ops_small_reassign_min.cmds, 0.05, 3,
+hidden_tc2/range3/range_ops_small_reassign_max.cmds, 0.05, 3,
+hidden_tc2/range3/range_ops_small_reassign_stdev.cmds, 0.05, 3,
+hidden_tc2/range3/range_ops_small_reassign_sum.cmds, 0.05, 3,
+hidden_tc2/range4/range_ops_large_reassign_avg.cmds, 0.75, 3,
+hidden_tc3/chain/large.cmds, 0.625, , 2048
+hidden_tc3/chain/small.cmds, 0.625, , 2048
+hidden_tc3/dense/dense_large.cmds, 1.0, ,  2048
+hidden_tc3/dense/dense_small.cmds, 1.0, ,  2048
+hidden_tc3/range1/small_max.cmds, 0.05, ,  2048
+hidden_tc3/range1/small_min.cmds, 0.05, ,  2048
+hidden_tc3/range1/small_avg.cmds, 0.05, ,  2048
+hidden_tc3/range1/small_stdev.cmds, 0.05, ,  2048
+hidden_tc3/range1/small_sum.cmds, 0.05, ,  2048
+hidden_tc3/range2/large.cmds, 0.25, ,  2048
+hidden_tc3/range3/small_max.cmds, 0.05, ,  2048
+hidden_tc3/range3/small_min.cmds, 0.05, ,  2048
+hidden_tc3/range3/small_sum.cmds, 0.05, ,  2048
+hidden_tc3/range3/small_stddev.cmds, 0.05, ,  2048
+hidden_tc3/range3/small_avg.cmds, 0.05, ,  2048
+hidden_tc3/range4/large.cmds, 0.75, ,  2048

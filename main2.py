@@ -44,8 +44,6 @@ def parse_out_file(out_file: Path, num_rows: int):
             try:
                 cells = list(map(lambda x: int(x), row.split()[1:]))
             except Exception as e:
-                print(rows)
-                print(len(rows))
                 raise e
             if num_cols == -1:
                 num_cols = len(cells)
@@ -69,7 +67,7 @@ def compare_table(table1, table2) -> bool:
 """
 Runs the commands given in the command file.
 """
-def run_test(bin_path: Path, cmd_file, exp_out_file) -> TestResult:
+def run_test(bin_path: Path, cmd_file, exp_out_file, marks_mapping) -> TestResult:
     exp_timeout, exp_table, num_cols = parse_exp_file(exp_out_file)
     out_file = Path("/tmp/out.txt")
     outerr_file = Path("/tmp/outerr.txt")
@@ -80,31 +78,49 @@ def run_test(bin_path: Path, cmd_file, exp_out_file) -> TestResult:
     with open(out_file, "w") as f:
         start_time = time.time()
         try:
+            # Read the file and skip the first line
+            with open(cmd_file) as f1:
+                lines = f1.readlines()
+                num_rows, num_cols = list(map(lambda x: int(x), lines[0].split()))
+                commands = "\n".join(lines[1:])
+
+            temp_in_file = open("/tmp/in.cmds", "w")
+            for line in commands:
+                temp_in_file.write(f"{line}")
+            temp_in_file.close()
+            temp_in_file = open("/tmp/in.cmds", "r")
+
             process = subprocess.Popen(
-                [str(bin_path), "999", "18278"],
+                [str(bin_path), str(num_rows), str(num_cols)],
+                stdin=temp_in_file,
                 stdout=f,
                 stderr=open(outerr_file, "w"),
-                stdin=open(cmd_file),
             )
 
             ps_process = psutil.Process(process.pid)
             while process.poll() is None:
                 mem_info = ps_process.memory_info()
-                max_mem_usage_gb = max(max_mem_usage_gb, mem_info.rss / 2**30)
+                max_mem_usage_gb = max(max_mem_usage_gb, mem_info.vms / 2**20)
                 if (time.time() - start_time) > exp_timeout:
-                    return TestResult(is_pass=False, reason="Timeout", time_taken_s=int(time.time() - start_time))
-                time.sleep(0.1)
-
+                    return TestResult(is_pass=False, reason="Timeout", time_taken_s=int(time.time() - start_time)*1000, max_mem_gb=max_mem_usage_gb, marks=0)
+                time.sleep(0.001)
+            
             process.wait()
             process.kill()
         except FileNotFoundError:
-            return TestResult(is_pass=False, reason="Compilation error")
+            return TestResult(is_pass=False, reason="Compilation error", marks=0)
         f.flush()
 
     out_table = parse_out_file(out_file, len(exp_table))
     if not compare_table(exp_table, out_table):
-        return TestResult(is_pass=False, reason="Wrong output")
-    return TestResult(is_pass=True, time_taken_s=int(time.time() - start_time), max_mem_gb=int(max_mem_usage_gb))
+        return TestResult(is_pass=False, reason="Wrong output", marks=0)
+    time_taken = (time.time() - start_time)
+
+    cmd_file = str(cmd_file)
+    marks = marks_mapping['marks'][cmd_file]
+    good_time = int(marks_mapping['good_time'][cmd_file])
+    normalized_marks = min(marks, marks * (good_time/time_taken))
+    return TestResult(is_pass=True, time_taken_s=time_taken*1000, max_mem_gb=max_mem_usage_gb, marks=normalized_marks)
 
 
 # if __name__ == "__main__":
@@ -152,6 +168,10 @@ if __name__ == "__main__":
         submission = Path(sys.argv[2])
         test_dir = Path(sys.argv[3])
         marks_mapping = Path(sys.argv[4])
+        try:
+            apply_patch = bool(sys.argv[5])
+        except:
+            apply_patch = False
     except:
         print(
             "Usage: python main.py [mode] [submission_dir] [test_dir] [marks_mapping]"
@@ -169,7 +189,7 @@ if __name__ == "__main__":
     # tc_name -> marks
     marks_mapping = parse_marks_mapping(marks_mapping)
     if mode == "batch":
-        eval_batch(run_test, submission, test_dir, marks_mapping, Path("~/lab1_marks2.csv"), True)
+        eval_batch(run_test, submission, test_dir, marks_mapping, Path("~/lab1_marks2.csv"), True, patch=apply_patch)
     elif mode == "single":
         entry_nos = submission.name.split("_")[1:]
-        eval_single(run_test, submission, test_dir, entry_nos, marks_mapping, True)
+        eval_single(run_test, submission, test_dir, entry_nos, marks_mapping,  patch=apply_patch)
