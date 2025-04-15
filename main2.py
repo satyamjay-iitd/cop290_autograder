@@ -82,7 +82,7 @@ def run_test(bin_path: Path, cmd_file, exp_out_file, marks_mapping) -> TestResul
             with open(cmd_file) as f1:
                 lines = f1.readlines()
                 num_rows, num_cols = list(map(lambda x: int(x), lines[0].split()))
-                commands = "\n".join(lines[1:])
+                commands = "".join(lines[1:])
 
             temp_in_file = open("/tmp/in.cmds", "w")
             for line in commands:
@@ -120,6 +120,7 @@ def run_test(bin_path: Path, cmd_file, exp_out_file, marks_mapping) -> TestResul
     marks = marks_mapping['marks'][cmd_file]
     good_time = int(marks_mapping['good_time'][cmd_file])
     normalized_marks = min(marks, marks * (good_time/time_taken))
+    normalized_marks = min(marks, normalized_marks * (2048/max_mem_usage_gb))
     return TestResult(is_pass=True, time_taken_s=time_taken*1000, max_mem_gb=max_mem_usage_gb, marks=normalized_marks)
 
 
