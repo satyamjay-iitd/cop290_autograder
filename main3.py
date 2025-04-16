@@ -122,7 +122,7 @@ def run_test(bin_path: Path, cmd_file, exp_out_file, marks_mapping) -> TestResul
     out_table = parse_out_file(out_file, len(exp_table))
     if not compare_table(exp_table, out_table):
         return TestResult(is_pass=False, reason="Wrong output", marks=0)
-    marks = marks_mapping['marks'][cmd_file]
+    marks = marks_mapping['marks'][str(cmd_file)]
     return TestResult(is_pass=True, time_taken_s=(time.time() - start_time)*1000, max_mem_gb=max_mem_usage_gb, marks=marks)
 
 
