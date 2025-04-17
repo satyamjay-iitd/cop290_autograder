@@ -40,6 +40,6 @@ hidden_tc3/range2/large.cmds, 0.25, ,  2048
 hidden_tc3/range3/small_max.cmds, 0.05, ,  2048
 hidden_tc3/range3/small_min.cmds, 0.05, ,  2048
 hidden_tc3/range3/small_sum.cmds, 0.05, ,  2048
-hidden_tc3/range3/small_stddev.cmds, 0.05, ,  2048
+hidden_tc3/range3/small_stdev.cmds, 0.05, ,  2048
 hidden_tc3/range3/small_avg.cmds, 0.05, ,  2048
 hidden_tc3/range4/large.cmds, 0.75, ,  2048
