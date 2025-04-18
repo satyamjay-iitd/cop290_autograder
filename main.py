@@ -84,14 +84,14 @@ def run_test(bin_path: Path, cmd_file, exp_out_file, marks_mapping):
             str(bin_path), args=[str(num_rows), str(num_cols)], echo=False, encoding="utf-8"
         )
     except Exception as e:
-        return TestResult(is_pass=False, reason=f"Couldn't spawn the program {e}")
+        return TestResult(is_pass=False, reason=f"Couldn't spawn the program {e}", marks=0)
     child.logfile_read = log
 
     # Expect the spreadsheet that is printed at the start of the program
     try:
         read_till_prompt(child, 10)
     except:
-        return TestResult(is_pass=False, reason="Couldn't read the initial prompt")
+        return TestResult(is_pass=False, reason="Couldn't read the initial prompt", marks=0)
 
     # Read the command file
     exp_tables = parse_expected_file(exp_out_file)
@@ -157,9 +157,9 @@ if __name__ == "__main__":
         test_dir = Path(sys.argv[3])
         marks_mapping = Path(sys.argv[4])
         try:
-            patch_path = Path(sys.argv[5])
+            patch_path = True
         except:
-            patch_path = None
+            patch_path = False
     except Exception as e:
         print("Usage: python main.py [mode] [submission_dir] [test_dir] [marks_mapping]")
         exit(1)
@@ -175,8 +175,15 @@ if __name__ == "__main__":
 
     # tc_name -> marks
     marks_mapping = parse_marks_mapping(marks_mapping)
+    # test_lambda: Callable[[Path, Path, Path, dict[str, int]], TestResult],
+    # submission_dir: Path,
+    # test_dir: Path,
+    # marks_mapping: dict[str, int],
+    # marks_csv: Path,
+    # add_mem_info: bool = False,
+    # patch: bool = False
     if mode == "batch":
-        eval_batch(run_test, submission, test_dir, marks_mapping, "~/lab1_marks.csv", patch=patch_path)
+        eval_batch(run_test, submission, test_dir, marks_mapping, Path("~/lab1_marks.csv"), patch=patch_path)
     elif mode == "single":
         entry_nos = submission.name.split("_")[1:]
         # entry_nos[-1] = entry_nos[-1][:-4]

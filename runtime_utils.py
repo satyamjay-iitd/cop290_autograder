@@ -265,7 +265,7 @@ def parse_table(lines: list[str]) -> Table | None:
     return Table(header_line, rows)
 
 
-def extract_zip(file: Path) -> tuple[Path, str] | None:
+def extract_zip(file: Path) -> Path | None:
     if file.suffix != ".zip":
         return None
     extract_to = Path("/tmp/cop290_lab1/")
@@ -301,7 +301,7 @@ class TestResult:
 
 
 def eval_single(
-    test_lambda: Callable[[Path, Path, Path], TestResult],
+    test_lambda: Callable[[Path, Path, Path, dict[str, int]], TestResult],
     submission_zip: Path,
     test_dir: Path,
     entry_nos: list[str],
@@ -376,7 +376,7 @@ def eval_single(
 
 
 def eval_batch(
-    test_lambda: Callable[[Path, Path, Path], TestResult],
+    test_lambda: Callable[[Path, Path, Path, dict[str, int]], TestResult],
     submission_dir: Path,
     test_dir: Path,
     marks_mapping: dict[str, int],
