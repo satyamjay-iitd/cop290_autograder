@@ -14,13 +14,7 @@ pub struct Assignment<'a> {
 pub struct ParserError;
 
 pub fn parse(s: &str) -> Result<Assignment, ParserError> {
-    let parts = s.split("=").collect::<Vec<&str>>();
-    // Hint: You can get the first character of a string with `chars().next()`. For example:
-    // let c = parts[0].chars().next().unwrap();
-    Ok(Assignment {
-        name: parts[0],
-        val: parts[1].parse::<i32>().unwrap(),
-    })
+    todo!()
 }
 
 #[cfg(test)]

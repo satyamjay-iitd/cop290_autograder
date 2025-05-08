@@ -9,19 +9,13 @@ pub struct Sortable<T> {
 
 impl PartialOrd for Sortable<u32> {
     fn partial_cmp(&self, other: &Sortable<u32>) -> Option<std::cmp::Ordering> {
-        if self.value == other.value {
-            Some(std::cmp::Ordering::Equal)
-        } else if self.value < other.value {
-            Some(std::cmp::Ordering::Less)
-        } else {
-            Some(std::cmp::Ordering::Greater)
-        }
+        todo!()
     }
 }
 
 impl Ord for Sortable<u32> {
     fn cmp(&self, other: &Sortable<u32>) -> std::cmp::Ordering {
-        self.partial_cmp(other).unwrap()
+        todo!()
     }
 }
 

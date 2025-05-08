@@ -1,34 +1,20 @@
 mod hidden_tests {
-    use std::{cell::RefCell, rc::Rc};
+    use template::List;
 
-    #[cfg(test)]
-    mod tests {
-        use template::{Node, drop_in_order};
+    #[test]
+    fn test_empty_list() {
+        assert_eq!(List::from(vec![]), List::Nil);
+    }
 
-        use super::*;
+    #[test]
+    fn test_from() {
+        assert_eq!(List::from(vec![100]), List::Cons(100, Box::new(List::Nil)));
+    }
 
-        #[test]
-        fn test_drop() {
-            let s = Rc::new(RefCell::new(String::from("")));
-            {
-                let _ = Node::new(100, s.clone());
-            }
-            assert_eq!("100 created. 100 dropped. ", s.borrow().as_str());
-        }
-
-        #[test]
-        fn test_drop_in_order() {
-            let s = Rc::new(RefCell::new(String::from("")));
-            let nodes = vec![
-                Node::new(100, s.clone()),
-                Node::new(200, s.clone()),
-                Node::new(300, s.clone()),
-            ];
-            drop_in_order(nodes, vec![2, 0, 1]);
-            assert_eq!(
-                "100 created. 200 created. 300 created. 300 dropped. 100 dropped. 200 dropped. ",
-                s.borrow().as_str()
-            );
-        }
+    #[test]
+    fn test_from_into() {
+        let v: Vec<i32> = vec![100, 200, 300];
+        let v2: Vec<i32> = List::from(v.clone()).into();
+        assert_eq!(v2, v);
     }
 }

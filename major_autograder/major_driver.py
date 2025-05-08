@@ -7,8 +7,8 @@ submissions_dir = "major_submissions"
 # TODO: Currently all test in a question has equal weightage.
 template_dirs = {
     "q1": ("major_templates/q1_template", 1, 1),
-    "q2": ("major_templates/q2_template", 2, 3),
-    "q3": ("major_templates/q3_template", 2, 2),
+    "q2": ("major_templates/q2_template", 2, 2),
+    "q3": ("major_templates/q3_template", 2, 3),
     "q4": ("major_templates/q4_template", 2, 2),
     "q5": ("major_templates/q5_template", 2, 2),
     "q6": ("major_templates/q6_template", 2, 3),
