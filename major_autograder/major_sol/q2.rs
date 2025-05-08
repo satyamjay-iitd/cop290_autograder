@@ -1,38 +1,39 @@
-/// Tasks
-/// 1. Fix `enum List` so that the compiler can know its size.
-/// 2. Implement `From` and `Into` for `List` to pass tests.
-///
-use std::convert::From;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-#[derive(PartialEq, Debug)]
-pub enum List {
-    Cons(i32, Box<List>), // Task 1
-    Nil,
+pub struct Node {
+    data: i32,
+    msgs: Rc<RefCell<String>>,
 }
 
-impl From<Vec<i32>> for List {
-    fn from(mut v: Vec<i32>) -> Self {
-        if v.len() == 0 {
-            List::Nil
-        } else {
-            List::Cons(v.remove(0), Box::new(List::from(v)))
-        }
+impl Node {
+    pub fn new(data: i32, msgs: Rc<RefCell<String>>) -> Self {
+        msgs.borrow_mut()
+            .push_str(format!("{} created. ", data).as_str());
+        Node { data, msgs }
     }
 }
 
-impl Into<Vec<i32>> for List {
-    fn into(mut self) -> Vec<i32> {
-        let mut v = vec![];
-        while self != List::Nil {
-            match self {
-                List::Nil => {}
-                List::Cons(x, l) => {
-                    v.push(x);
-                    self = *l;
-                }
+impl Drop for Node {
+    fn drop(&mut self) {
+        self.msgs
+            .borrow_mut()
+            .push_str(format!("{} dropped. ", self.data).as_str());
+    }
+}
+
+pub fn drop_in_order(mut nodes: Vec<Node>, mut order: Vec<usize>) {
+    let mut new_order = Vec::new();
+    for i in 0..order.len() {
+        new_order.push(order[i]);
+        for i2 in (i + 1)..order.len() {
+            if order[i] < order[i2] {
+                order[i2] -= 1;
             }
         }
-        v
+    }
+    for o in new_order {
+        nodes.remove(o);
     }
 }
 
@@ -41,19 +42,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_empty_list() {
-        assert_eq!(List::from(vec![]), List::Nil);
+    fn test_drop() {
+        let s = Rc::new(RefCell::new(String::from("")));
+        {
+            let _ = Node::new(0, s.clone());
+        }
+        assert_eq!("0 created. 0 dropped. ", s.borrow().as_str());
     }
 
     #[test]
-    fn test_from() {
-        assert_eq!(List::from(vec![1]), List::Cons(1, Box::new(List::Nil)));
-    }
-
-    #[test]
-    fn test_from_into() {
-        let v: Vec<i32> = vec![1, 2];
-        let v2: Vec<i32> = List::from(v.clone()).into();
-        assert_eq!(v2, v);
+    fn test_drop_in_order() {
+        let s = Rc::new(RefCell::new(String::from("")));
+        let nodes = vec![
+            Node::new(0, s.clone()),
+            Node::new(1, s.clone()),
+            Node::new(2, s.clone()),
+        ];
+        drop_in_order(nodes, vec![1, 0, 2]);
+        assert_eq!(
+            "0 created. 1 created. 2 created. 1 dropped. 0 dropped. 2 dropped. ",
+            s.borrow().as_str()
+        );
     }
 }
