@@ -40,7 +40,3 @@ Test cases tested using this tester is located here:- `hidden_tc2/`
 
 ### Run single test
 `python main2.py single {path_to_zip_file} hidden_tc2/*/*.cmds marks_mapping.csv`
-
-
-
-
