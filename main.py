@@ -165,9 +165,15 @@ if __name__ == "__main__":
         exit(1)
 
 
-    assert mode == "batch" or mode == "single"
+    assert mode in ("batch", "single", "binary", "batch_binary")
     if mode == "batch":
         assert submission.is_dir(), "Must be a directory"
+        assert submission.exists(), "Directory must exist"
+    elif mode == "binary":
+        assert submission.is_file(), "Must be a path to the sheet binary"
+        assert submission.exists(), "Binary must exist"
+    elif mode == "batch_binary":
+        assert submission.is_dir(), "Must be a directory of extracted submissions"
         assert submission.exists(), "Directory must exist"
     else:
         assert submission.is_file(), "Must be a zip file"
@@ -175,17 +181,20 @@ if __name__ == "__main__":
 
     # tc_name -> marks
     marks_mapping = parse_marks_mapping(marks_mapping)
-    # test_lambda: Callable[[Path, Path, Path, dict[str, int]], TestResult],
-    # submission_dir: Path,
-    # test_dir: Path,
-    # marks_mapping: dict[str, int],
-    # marks_csv: Path,
-    # add_mem_info: bool = False,
-    # patch: bool = False
+
     if mode == "batch":
         eval_batch(run_test, submission, test_dir, marks_mapping, Path("~/lab1_marks.csv"), patch=patch_path)
     elif mode == "single":
         entry_nos = submission.name.split("_")[1:]
-        # entry_nos[-1] = entry_nos[-1][:-4]
-        # print(entry_nos)
         eval_single(run_test, submission, test_dir, entry_nos, marks_mapping, patch=patch_path)
+    elif mode == "binary":
+        # submission is the path to the pre-built binary
+        test_cases = get_test_case_pairs(test_dir)
+        for cmd, expected in test_cases:
+            console.print(f"Running {cmd}")
+            result = run_test(submission, cmd, expected, marks_mapping)
+            console.print(f"{'PASS' if result.is_pass else 'FAIL'}: {result.reason} marks={result.marks}")
+    elif mode == "batch_binary":
+        # submission is a directory of already-extracted student submissions,
+        # each containing a pre-built 'sheet' binary.
+        eval_batch_binary(run_test, submission, test_dir, marks_mapping, Path("lab1_marks.csv"))

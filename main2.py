@@ -35,9 +35,11 @@ def parse_exp_file(exp_file: Path):
 def parse_out_file(out_file: Path, num_rows: int):
     with open(out_file) as f:
         rows = f.readlines()
-        rows = rows[-(num_rows + 1) : -1]
+        # Filter to lines that look like table rows (start with a row index integer).
+        # This handles binaries that write prompt text to stdout.
+        rows = [r for r in rows if r.split() and r.split()[0].lstrip('-').isdigit()]
+        rows = rows[-num_rows:]
         num_cols = -1
-        num_rows = len(rows)
         table = []
         for row in rows:
             # First cell is row_idx, ignore that
@@ -48,7 +50,7 @@ def parse_out_file(out_file: Path, num_rows: int):
             if num_cols == -1:
                 num_cols = len(cells)
             else:
-                assert len(cells), num_cols
+                assert len(cells) == num_cols
 
             table.append(cells)
 
@@ -179,9 +181,15 @@ if __name__ == "__main__":
         )
         exit(1)
 
-    assert mode == "batch" or mode == "single"
+    assert mode in ("batch", "single", "binary", "batch_binary")
     if mode == "batch":
         assert submission.is_dir(), "Must be a directory"
+        assert submission.exists(), "Directory must exist"
+    elif mode == "binary":
+        assert submission.is_file(), "Must be a path to the sheet binary"
+        assert submission.exists(), "Binary must exist"
+    elif mode == "batch_binary":
+        assert submission.is_dir(), "Must be a directory of extracted submissions"
         assert submission.exists(), "Directory must exist"
     else:
         assert submission.is_file(), "Must be a zip file"
@@ -193,4 +201,12 @@ if __name__ == "__main__":
         eval_batch(run_test, submission, test_dir, marks_mapping, Path("~/lab1_marks2.csv"), True, patch=apply_patch)
     elif mode == "single":
         entry_nos = submission.name.split("_")[1:]
-        eval_single(run_test, submission, test_dir, entry_nos, marks_mapping,  patch=apply_patch)
+        eval_single(run_test, submission, test_dir, entry_nos, marks_mapping, patch=apply_patch)
+    elif mode == "binary":
+        test_cases = get_test_case_pairs(test_dir)
+        for cmd, expected in test_cases:
+            console.print(f"Running {cmd}")
+            result = run_test(submission, cmd, expected, marks_mapping)
+            console.print(f"{'PASS' if result.is_pass else 'FAIL'}: {result.reason} marks={result.marks:.2f} time={result.time_taken_s:.0f}ms mem={result.max_mem_gb:.1f}MB")
+    elif mode == "batch_binary":
+        eval_batch_binary(run_test, submission, test_dir, marks_mapping, Path("lab1_marks2.csv"))

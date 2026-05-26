@@ -301,4 +301,5 @@ A299=MAX(B1:ALA999)
 A300=MAX(B1:ALA999)
 B1=1
 enable_output
+scroll_to A1
 q 

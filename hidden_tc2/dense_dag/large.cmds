@@ -22750,6 +22750,6 @@ FOW2=MAX(A1:FOW1)
 FOX2=MAX(A1:FOX1)
 FOY2=MAX(A1:FOY1)
 A1=1000000
-scroll_to FOY2
 enable_output
+scroll_to FOY2
 q

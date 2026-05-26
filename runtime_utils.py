@@ -347,7 +347,7 @@ def eval_single(
         console.print(f"Running {cmd}")
         result = test_lambda(bin_path, cmd, expected, marks_mapping)
         # Kill spreadsheet process for sanity
-        subprocess.run(["pkill", "-f", "spreadsheet"])
+        subprocess.run(["pkill", "-f", "sheet"])
 
         verdict.append((cmd, result.is_pass, result.reason, result.marks, result.max_mem_gb, result.time_taken_s))
         if not result.is_pass:
@@ -467,3 +467,62 @@ def eval_batch(
 
     df = pd.DataFrame(total_data)
     df.to_csv(str(marks_csv), index=False)
+
+
+def eval_batch_binary(
+    test_lambda: Callable[[Path, Path, Path, dict[str, int]], TestResult],
+    submissions_dir: Path,
+    test_dir: Path,
+    marks_mapping: dict[str, int],
+    marks_csv: Path,
+):
+    """Grade a directory of already-extracted submissions, each with a pre-built 'sheet' binary."""
+
+    def is_number(s: str) -> bool:
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
+    total_data = []
+    test_cases = get_test_case_pairs(test_dir)
+
+    for student_dir in sorted(submissions_dir.iterdir()):
+        if not student_dir.is_dir():
+            continue
+
+        bin_path = student_dir / "sheet"
+        if not bin_path.exists():
+            console.print(f"[red]No 'sheet' binary in {student_dir}, skipping[/red]")
+            continue
+
+        console.print(f"\n[cyan]Evaluating: {student_dir.name}[/cyan]")
+        result_map = {}
+
+        for cmd, expected in test_cases:
+            console.print(f"  Running {cmd.name}")
+            result = test_lambda(bin_path, cmd, expected, marks_mapping)
+            subprocess.run(["pkill", "-f", "sheet"])
+
+            if result.is_pass:
+                result_map[str(cmd)] = result.marks
+            else:
+                result_map[str(cmd)] = result.reason
+
+        total = sum(v for v in result_map.values() if is_number(str(v)))
+
+        # One row per entry number encoded in the directory name
+        entry_no_regex = r"20\d{2}\w{2,3}\d{4,5}"
+        entry_nos = re.findall(entry_no_regex, student_dir.name)
+        if not entry_nos:
+            entry_nos = [student_dir.name]
+
+        for entry_no in entry_nos:
+            data = {"group_idx": student_dir.name, "entry_no": entry_no, "total": total}
+            data |= result_map
+            total_data.append(data)
+
+    df = pd.DataFrame(total_data)
+    df.to_csv(str(marks_csv), index=False)
+    console.print(f"\n[green]Results saved to {marks_csv}[/green]")

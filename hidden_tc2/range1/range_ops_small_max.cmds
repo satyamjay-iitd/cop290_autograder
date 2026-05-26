@@ -1001,4 +1001,5 @@ B998=6
 B999=8
 A1=MAX(B1:B999)
 enable_output
+scroll_to A1
 q

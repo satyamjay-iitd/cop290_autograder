@@ -1,11 +1,24 @@
 # COP290 Lab1 Autograder
 
+# New Instructions
+
+## Prerequisite
+1. Ubuntu (Might work on Windows-WSL and MacOs too, haven't tested)
+2. Python3.12 (Might work on 3.10, 3.11 as well, haven't tested though)
+
+## Running Autograder
+1. For Easy Test Cases, Run `python main.py binary <path_to_your_sheet_binary> hidden_tc/ marks_mapping.csv`
+2. For example, `python main.py binary /home/satyam/dev/CProjects/sheet hidden_tc/ marks_mapping.csv`
+3. For Hard Test Cases, Run `python main2.py binary <path_to_your_sheet_binary> hidden_tc2/ marks_mapping.csv`
+
+# Old Instructions
+
 ## Play demo
 1. Install [asciinema](https://docs.asciinema.org/getting-started/)
 2. Run `asciinema play autograder.cast`
 
 ## Prerequisite
-1. Ubuntu
+1. Ubuntu (Might work on Windows-WSL and MacOs too, haven't tested)
 2. Python3.12 (Might work on 3.10, 3.11 as well, haven't tested though)
 3. gcc-11 to compile your project
 4. Project zip that you submitted on the moodle
