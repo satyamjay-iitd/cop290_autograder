@@ -11,7 +11,7 @@
 2. For example, `python main.py binary /home/satyam/dev/CProjects/sheet hidden_tc/ marks_mapping.csv`
 3. For Hard Test Cases, Run `python main2.py binary <path_to_your_sheet_binary> hidden_tc2/ marks_mapping.csv`
 
-# Old Instructions (Abu Dhabi Student's should ignore)
+# Old Instructions (Abu Dhabi Student should ignore)
 
 ## Play demo
 1. Install [asciinema](https://docs.asciinema.org/getting-started/)
