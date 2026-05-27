@@ -6,6 +6,13 @@
 1. Ubuntu (Might work on Windows-WSL and MacOs too, haven't tested)
 2. Python3.12 (Might work on 3.10, 3.11 as well, haven't tested though)
 
+## First time setup
+1. `git clone https://github.com/satyamjay-iitd/cop290_autograder`
+2. `cd lab1_autograder`
+3. Create python virtualenv:- `python3.12 -m venv venv`
+4. Activate environment:- `source venv/bin/activate`
+5. Install dependencies:- `pip install -r requirements.txt`
+
 ## Running Autograder
 1. For Easy Test Cases, Run `python main.py binary <path_to_your_sheet_binary> hidden_tc/ marks_mapping.csv`
 2. For example, `python main.py binary /home/satyam/dev/CProjects/sheet hidden_tc/ marks_mapping.csv`
