@@ -17,6 +17,8 @@
 1. For Easy Test Cases, Run `python main.py binary <path_to_your_sheet_binary> hidden_tc/ marks_mapping.csv`
 2. For example, `python main.py binary /home/satyam/dev/CProjects/sheet hidden_tc/ marks_mapping.csv`
 3. For Hard Test Cases, Run `python main2.py binary <path_to_your_sheet_binary> hidden_tc2/ marks_mapping.csv`
+4. You can ignore `hidden_tc3`. This is not being used.
+5. Testcase to Marks mapping is given in `marks_mapping.csv`, where the first column is the test case; second is marks allotted if the test passes; third column is maximum time allowed for your program to run, if your program doesn't finish in this time, the test case will considered to be failing. You can ignore the fourth column.
 
 # Old Instructions (Abu Dhabi Student should ignore)
 
